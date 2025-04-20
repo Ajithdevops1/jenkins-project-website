@@ -1,26 +1,18 @@
-FROM ubuntu:20.04
+# Use an official Python base image
+FROM python:3.10-slim
 
-# Avoid prompts during install
-ENV DEBIAN_FRONTEND=noninteractive
+# Set the working directory
+WORKDIR /app
 
-# Install dependencies
-RUN apt update && \
-    apt install -y python3 python3-pip openjdk-11-jdk curl wget supervisor && \
-    pip3 install flask
+# Copy requirements and install them
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Jenkins
-RUN mkdir -p /usr/share/jenkins && \
-    wget https://get.jenkins.io/war-stable/2.426.1/jenkins.war -O /usr/share/jenkins/jenkins.war
+# Copy the application code
+COPY app.py .
 
-# Create app directory and copy Flask app
-RUN mkdir /app
-COPY app.py /app/
+# Expose the Flask port
+EXPOSE 5000
 
-# Copy supervisord config
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Expose Flask (5000) and Jenkins (8080) ports
-EXPOSE 5000 8080
-
-# Start both services
-CMD ["/usr/bin/supervisord", "-n"]
+# Run the app
+CMD ["python", "app.py"]
