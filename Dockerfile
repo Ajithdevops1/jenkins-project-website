@@ -1,37 +1,26 @@
-# Use a base image with system tools
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 
-# Set environment variables
+# Avoid prompts during install
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install required tools
-RUN apt-get update && apt-get install -y \
-    curl \
-    gnupg2 \
-    openjdk-11-jdk \
-    python3 \
-    python3-pip \
-    git \
-    sudo
-
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
+# Install dependencies
+RUN apt update && \
+    apt install -y python3 python3-pip openjdk-11-jdk curl wget supervisor && \
+    pip3 install flask
 
 # Install Jenkins
-RUN curl -fsSL https://pkg.jenkins.io/debian/jenkins.io-2023.key | tee \
-    /usr/share/keyrings/jenkins-keyring.asc > /dev/null && \
-    echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
-    https://pkg.jenkins.io/debian binary/ | tee \
-    /etc/apt/sources.list.d/jenkins.list > /dev/null && \
-    apt-get update && apt-get install -y jenkins
+RUN mkdir -p /usr/share/jenkins && \
+    wget https://get.jenkins.io/war-stable/2.426.1/jenkins.war -O /usr/share/jenkins/jenkins.war
 
-# Copy Flask app
-COPY app.py /app/app.py
-WORKDIR /app
+# Create app directory and copy Flask app
+RUN mkdir /app
+COPY app.py /app/
 
-# Expose ports
+# Copy supervisord config
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose Flask (5000) and Jenkins (8080) ports
 EXPOSE 5000 8080
 
-# Run Jenkins and Flask in the same container
-CMD ["sh", "-c", "service jenkins start && python3 /app/app.py"]
+# Start both services
+CMD ["/usr/bin/supervisord", "-n"]
