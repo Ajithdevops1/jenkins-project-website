@@ -30,8 +30,8 @@ RUN curl -fsSL https://pkg.jenkins.io/debian/jenkins.io-2023.key | tee \
 COPY app.py /app/app.py
 WORKDIR /app
 
-# Expose Flask and Jenkins ports
+# Expose ports
 EXPOSE 5000 8080
 
-# Run both Flask and Jenkins (using supervisord or simple shell script)
-CMD service jenkins start && python3 app.py
+# Run Jenkins and Flask in the same container
+CMD ["sh", "-c", "service jenkins start && python3 /app/app.py"]
